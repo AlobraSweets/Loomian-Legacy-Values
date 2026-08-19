@@ -72,6 +72,31 @@ button.secondary{background:var(--card-bg);color:var(--ink)}
 footer{padding:20px;text-align:center;color:#64748b;font-size:12px}
 @media(max-width:720px){.grid{grid-template-columns:1fr}}
 
+.topnav{display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;background:#020617;border-bottom:1px solid #1e293b;position:sticky;top:0;z-index:20}
+.topnav button{background:#111827;color:#e2e8f0;border:1px solid #334155;border-radius:999px;padding:8px 14px}
+.topnav button.on{background:#2563eb;border-color:#60a5fa;color:#fff}
+.publish-banner{display:none;background:#78350f;color:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:13px;line-height:1.45}
+.publish-banner.show{display:block}
+.card-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;margin-left:auto}
+.port-add{background:#0f766e;border-color:#2dd4bf;color:#fff;border-radius:8px;padding:6px 8px;font-size:11px;white-space:nowrap}
+.tool-view{display:none}
+.tool-view.on{display:block}
+.worth{font-size:28px;font-weight:800;color:#fde68a;margin:4px 0 12px}
+.picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:10px 0}
+.picker label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:#94a3b8}
+.side-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:800px){.side-grid{grid-template-columns:1fr}}
+.side{background:#0f172a;border:1px solid #334155;border-radius:14px;padding:12px}
+.side h3{margin:0 0 8px}
+.item{display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid #1e293b;border-radius:10px;padding:8px;margin:6px 0;background:#152033}
+.item b{color:#f8fafc}
+.verdict{font-size:20px;font-weight:800;text-align:center;padding:12px;border-radius:12px;margin-top:12px}
+.verdict.win{background:#14532d;color:#bbf7d0}
+.verdict.lose{background:#7f1d1d;color:#fecaca}
+.verdict.fair{background:#1e3a5f;color:#bfdbfe}
+input.qty{min-width:70px;width:80px;flex:0}
+
+
 /* Owner/admin tools */
 .owner-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
 .owner-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #475569;background:#0f172a;color:#cbd5e1;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:800}
@@ -87,11 +112,19 @@ footer{padding:20px;text-align:center;color:#64748b;font-size:12px}
 </style>
 </head>
 <body>
+
+<nav class="topnav">
+  <button type="button" class="on" data-view="dex">Value Dex</button>
+  <button type="button" data-view="portfolio">Portfolio</button>
+  <button type="button" data-view="trade">Trade calculator</button>
+</nav>
 <header>
   <h1>Loomian Value Dex</h1>
-  <p>Pick Secret / Alpha / Gamma / Radiant to see that form’s trade value. Missing values show N/A. Hide valueless Loomians with the filter.</p>
+  <p>Pick Secret / Alpha / Gamma / Radiant to see that form’s trade value. Missing values show N/A. Use Portfolio to track your GR worth, and Trade calculator to check a deal. Owner edits only go live after Publish for everyone.</p>
 </header>
 <main>
+<div id="publishBanner" class="publish-banner">You have unpublished owner edits on this computer. Visitors will not see them until you click <b>Publish for everyone</b> and update the GitHub file.</div>
+<div id="dexView">
 <section class="panel">
   <div class="help">Values are in GR (Gleam Roam). Event reskins are extra cards. Color pills swap the sprite. Use the event filter for Halloween, Christmas, Anniversary, and the rest.</div>
   <div class="row">
@@ -110,6 +143,50 @@ footer{padding:20px;text-align:center;color:#64748b;font-size:12px}
 </section>
 <p id="status" class="status"></p>
 <section id="grid" class="grid"></section>
+
+</div>
+<section id="portfolioView" class="tool-view">
+  <section class="panel">
+    <div class="help">Your portfolio is saved in <b>your</b> browser only. Add Loomians, pick the form, colour, and listed nature/GR value, then see your total worth.</div>
+    <div class="picker">
+      <label>Filter list<input id="portFilter" placeholder="Type a name"></label>
+      <label>Loomian<select id="portLoom"></select></label>
+      <label>Form<select id="portGleam"></select></label>
+      <label>Variation<select id="portColor"></select></label>
+      <label>Nature / listed value<select id="portNature"></select></label>
+      <label>Qty<input id="portQty" class="qty" type="number" min="1" value="1"></label>
+      <label class="chk"><input id="portFE" type="checkbox"> First Edition</label>
+    </div>
+    <div class="row">
+      <button type="button" id="portAdd">Add to portfolio</button>
+      <button type="button" id="portClear" class="secondary">Clear portfolio</button>
+    </div>
+    <div class="worth" id="portWorth">0 GR</div>
+    <div id="portList"></div>
+  </section>
+</section>
+<section id="tradeView" class="tool-view">
+  <section class="panel">
+    <div class="help">Put Loomians on each side using the listed nature values. The calculator totals GR and says whether the trade is a win, a lose, or roughly fair (within 5%).</div>
+    <div class="picker">
+      <label>Add to<select id="tradeSide"><option value="left">Your side</option><option value="right">Their side</option></select></label>
+      <label>Filter list<input id="tradeFilter" placeholder="Type a name"></label>
+      <label>Loomian<select id="tradeLoom"></select></label>
+      <label>Form<select id="tradeGleam"></select></label>
+      <label>Variation<select id="tradeColor"></select></label>
+      <label>Nature / listed value<select id="tradeNature"></select></label>
+      <label>Qty<input id="tradeQty" class="qty" type="number" min="1" value="1"></label>
+      <label class="chk"><input id="tradeFE" type="checkbox"> First Edition</label>
+    </div>
+    <div class="row"><button type="button" id="tradeAdd">Add to trade</button><button type="button" id="tradeClear" class="secondary">Clear trade</button></div>
+    <div class="side-grid">
+      <div class="side"><h3>Your side</h3><div class="worth" id="leftWorth">0 GR</div><div id="leftList"></div></div>
+      <div class="side"><h3>Their side</h3><div class="worth" id="rightWorth">0 GR</div><div id="rightList"></div></div>
+    </div>
+    <div id="tradeVerdict" class="verdict fair">Add Loomians to compare</div>
+  </section>
+</section>
+
 </main>
 <footer>Single-file page — open this HTML in Chrome or Edge. No extra files needed.</footer>
 <script>
@@ -127,6 +204,7 @@ const CHIP_COLOR={Red:'#c0392b',Orange:'#e67e22',Yellow:'#f1c40f',Green:'#27ae60
 const LABELS={sa:'Secret Ability',alpha:'Alpha',gamma:'Gamma',radiant:'Radiant',firstEdition:'First Edition',event:'Normal'};
 
 let OWNER_AUTH=false;
+let UNPUBLISHED=false;
 const OWNER_KEY='loomianOwnerPassHash_v1';
 const OWNER_DATA_KEY='loomianOwnerData_v1';
 const CHANGELOG_KEY='loomianOwnerChangelog_v1';
@@ -135,14 +213,14 @@ const DEMAND_COLORS={OP:'#a855f7',Good:'#3b82f6',Alright:'#22c55e',Decent:'#f973
 function cloneJson(x){return JSON.parse(JSON.stringify(x));}
 function readOwnerData(){try{return JSON.parse(localStorage.getItem(OWNER_DATA_KEY)||'null')}catch(e){return null}}
 function saveOwnerData(){localStorage.setItem(OWNER_DATA_KEY,JSON.stringify(LOOMIANS));}
-function applyOwnerData(){const saved=readOwnerData();if(Array.isArray(saved)&&saved.length){LOOMIANS.splice(0,LOOMIANS.length,...saved)}}
+function applyOwnerData(){if(!localStorage.getItem(OWNER_KEY))return;const saved=readOwnerData();if(Array.isArray(saved)&&saved.length){LOOMIANS.splice(0,LOOMIANS.length,...saved);UNPUBLISHED=true;}}
 function readChanges(){let local=[];try{local=JSON.parse(localStorage.getItem(CHANGELOG_KEY)||'[]')||[]}catch(e){local=[]}const seed=Array.isArray(CHANGELOG_SEED)?CHANGELOG_SEED:[];const out=[...local];seed.forEach(x=>{if(!out.some(y=>y.time===x.time&&y.summary===x.summary))out.push(x)});return out}
 function writeChanges(items){localStorage.setItem(CHANGELOG_KEY,JSON.stringify(items.slice(0,250)));}
 function logChange(summary,details){const items=readChanges();items.unshift({time:new Date().toLocaleString(),summary,details:details||''});writeChanges(items);}
 function demandColorFor(name){return DEMAND_COLORS[name]||'#475569'}
 function fileObj(normal,alpha,gamma){return {normal:normal||null,alpha:alpha||null,gamma:gamma||null}}
-function upsertLoomian(obj,oldId){const i=LOOMIANS.findIndex(x=>x.id===(oldId||obj.id));if(i>=0)LOOMIANS[i]=obj;else LOOMIANS.push(obj);saveOwnerData();refreshSelects();render();logChange((i>=0?'Edited ':'Added ')+obj.name,'Owner editor save');}
-function deleteLoomian(id){const i=LOOMIANS.findIndex(x=>x.id===id);if(i>=0){const name=LOOMIANS[i].name;LOOMIANS.splice(i,1);saveOwnerData();refreshSelects();render();logChange('Deleted '+name,'Removed profile from local owner data');}}
+function upsertLoomian(obj,oldId){const i=LOOMIANS.findIndex(x=>x.id===(oldId||obj.id));if(i>=0)LOOMIANS[i]=obj;else LOOMIANS.push(obj);saveOwnerData();if(typeof markUnpublished==='function')markUnpublished();refreshSelects();if(typeof fillToolSelects==='function')fillToolSelects();render();logChange((i>=0?'Edited ':'Added ')+obj.name,'Saved on this computer. Click Publish for everyone so visitors see it.');}
+function deleteLoomian(id){const i=LOOMIANS.findIndex(x=>x.id===id);if(i>=0){const name=LOOMIANS[i].name;LOOMIANS.splice(i,1);saveOwnerData();if(typeof markUnpublished==='function')markUnpublished();refreshSelects();if(typeof fillToolSelects==='function')fillToolSelects();render();logChange('Deleted '+name,'Saved on this computer. Click Publish for everyone so visitors see it.');}}
 function naturalSort(a,b){return String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:'base'});}
 function valueNum(text){let s=String(text||'').toLowerCase().replace(/,/g,'').trim();let m=s.match(/([+-]?\d+(?:\.\d+)?)\s*k\s*\+?\s*gr/);if(m)return parseFloat(m[1])*1000;m=s.match(/([+-]?\d+(?:\.\d+)?)\s*gr/);if(m)return parseFloat(m[1]);m=s.match(/([+-]?\d+(?:\.\d+)?)\s*gamma/);if(m)return parseFloat(m[1])*0.1;m=s.match(/([+-]?\d+(?:\.\d+)?)\s*gleam/);if(m)return parseFloat(m[1])*0.02;m=s.match(/^[+-]?\d+(?:\.\d+)?$/);if(m)return parseFloat(s);return 0;}
 function maxValue(p){let max=0;function scan(blob){if(!blob||typeof blob!=='object')return;(blob.rows||[]).forEach(r=>{max=Math.max(max,valueNum(r.v),valueNum(r.n));});(blob.notes||[]).forEach(n=>{max=Math.max(max,valueNum(n));});if(blob.byColor)Object.values(blob.byColor).forEach(scan);if(blob.extras)Object.values(blob.extras).forEach(scan)}Object.values(p.values||{}).forEach(scan);return max;}
@@ -309,7 +387,7 @@ function card(p){
   const cat='';
   return `<div class="card-shell" style="${cardShellStyle(p.types)}" data-card="${escapeHtml(p.id)}">
     <article class="card">
-      <div class="card-head">${spriteHtml(p,gleam)}<div class="head-text"><h3>${escapeHtml(displayName(p))}</h3><div class="badges">${types}</div></div>${ownerEditButton(p)}</div>
+      <div class="card-head">${spriteHtml(p,gleam)}<div class="head-text"><h3>${escapeHtml(displayName(p))}</h3><div class="badges">${types}</div></div><div class="card-actions">${ownerEditButton(p)}<button type="button" class="port-add" data-add-port="${escapeHtml(p.id)}">+ Portfolio</button></div></div>
       ${colorRow(p)}
       <div class="icon-row">${iconBtn(p,'sa',gleam==='sa')}${iconBtn(p,'alpha',gleam==='alpha')}${iconBtn(p,'gamma',gleam==='gamma')}${iconBtn(p,'radiant',gleam==='radiant')}${iconBtn(p,'firstEdition',!!st.fe)}</div>
       ${valueSlot(p)}
@@ -391,7 +469,7 @@ function ensureOwnerUi(){
   const resetBtn=document.getElementById('reset');
   if(!resetBtn||document.getElementById('ownerLoginBtn'))return;
   const wrap=document.createElement('div');wrap.className='owner-tools';
-  wrap.innerHTML='<span id="ownerStatus" class="owner-pill">Owner: locked</span><button type="button" id="ownerLoginBtn" class="secondary">Owner login</button><button type="button" id="newProfileBtn" class="secondary" style="display:none">New profile</button><button type="button" id="exportDataBtn" class="secondary" style="display:none">Export updated HTML</button><button type="button" id="importDataBtn" class="secondary" style="display:none">Import backup</button><button type="button" id="changelogBtn" class="secondary">Changelogs</button>';
+  wrap.innerHTML='<span id="ownerStatus" class="owner-pill">Owner: locked</span><button type="button" id="ownerLoginBtn" class="secondary">Owner login</button><button type="button" id="newProfileBtn" class="secondary" style="display:none">New profile</button><button type="button" id="exportDataBtn" class="secondary" style="display:none">Publish for everyone</button><button type="button" id="importDataBtn" class="secondary" style="display:none">Import backup</button><button type="button" id="changelogBtn" class="secondary">Changelogs</button>';
   resetBtn.closest('.row').after(wrap);
   document.body.insertAdjacentHTML('beforeend',`<div id="adminModal" class="admin-modal"><div class="admin-box"><h2 id="adminTitle">Owner editor</h2><div id="adminContent"></div></div></div><div id="changeModal" class="admin-modal"><div class="admin-box"><h2>Changelogs</h2><div id="changeContent"></div><div class="admin-actions"><button type="button" class="secondary" onclick="closeModal('changeModal')">Close</button></div></div></div>`);
   document.getElementById('ownerLoginBtn').onclick=ownerLogin;
@@ -401,7 +479,7 @@ function ensureOwnerUi(){
   document.getElementById('changelogBtn').onclick=showChangelog;
   updateOwnerStatus();
 }
-function updateOwnerStatus(){const s=document.getElementById('ownerStatus');if(!s)return;s.textContent=OWNER_AUTH?'Owner: unlocked':'Owner: locked';s.classList.toggle('on',OWNER_AUTH);['newProfileBtn','exportDataBtn','importDataBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=OWNER_AUTH?'inline-block':'none'});const b=document.getElementById('ownerLoginBtn');if(b)b.textContent=OWNER_AUTH?'Owner logout':'Owner login'}
+function updateOwnerStatus(){const s=document.getElementById('ownerStatus');if(!s)return;s.textContent=OWNER_AUTH?'Owner: unlocked':'Owner: locked';s.classList.toggle('on',OWNER_AUTH);['newProfileBtn','exportDataBtn','importDataBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=OWNER_AUTH?'inline-block':'none'});const ban=document.getElementById('publishBanner');if(ban){if(OWNER_AUTH&&UNPUBLISHED)ban.classList.add('show');else ban.classList.remove('show')};const b=document.getElementById('ownerLoginBtn');if(b)b.textContent=OWNER_AUTH?'Owner logout':'Owner login'}
 function closeModal(id){const el=document.getElementById(id);if(el)el.classList.remove('open')}
 function ownerLogin(){if(OWNER_AUTH){OWNER_AUTH=false;updateOwnerStatus();render();return;}const has=localStorage.getItem(OWNER_KEY);const msg=has?'Enter owner passcode':'Create owner passcode for this browser';const pass=prompt(msg);if(!pass)return;const h=md5(pass);if(!has){localStorage.setItem(OWNER_KEY,h);OWNER_AUTH=true;logChange('Owner passcode created','Admin mode enabled on this browser');}else if(h===has){OWNER_AUTH=true;}else{alert('Incorrect passcode');return;}updateOwnerStatus();render();}
 function parseLines(text){return String(text||'').split('\n').map(x=>x.trim()).filter(Boolean)}
@@ -469,15 +547,241 @@ function openEditor(id){
   document.getElementById('applyQuick').onclick=()=>{const key=document.getElementById('quickKey').value;const color=document.getElementById('valueColor').value;const demand=document.getElementById('quickDemand').value.trim();const old=getBlob(key,color);const blob={...old,title:document.getElementById('quickTitle').value.trim(),demand,demandColor:demandColorFor(demand),ineffective:document.getElementById('quickIneff').value.trim(),rows:textToRows(document.getElementById('quickRows').value),notes:old.notes||[],firstEdition:old.firstEdition||null};putBlob(key,color,blob);document.getElementById('edMsg').textContent='Applied '+(color==='__all'?'general':color)+' '+key+' values. Click Save profile when finished.'};
   document.getElementById('copyAllToColor').onclick=()=>{const key=document.getElementById('quickKey').value;const color=document.getElementById('valueColor').value;if(color==='__all')return alert('Choose a specific variation first.');const base=cloneJson(getBlob(key,'__all'));delete base.byColor;putBlob(key,color,base);loadQuick();document.getElementById('edMsg').textContent='Copied general '+key+' values into '+color+'. Edit them and save.'};
   document.getElementById('deleteVariantValue').onclick=()=>{const key=document.getElementById('quickKey').value;const color=document.getElementById('valueColor').value;if(color==='__all')return alert('This only deletes specific variation values.');if(work.values&&work.values[key]&&work.values[key].byColor){delete work.values[key].byColor[color];loadQuick();document.getElementById('edMsg').textContent='Deleted '+color+' specific '+key+' values. It will now fall back to All variations.'}};
-  document.getElementById('saveEd').onclick=()=>{saveVarName();const base=document.getElementById('edBase').value.trim()||'New Loomian';const res=document.getElementById('edReskin').value.trim();const out={...work};out.species=base;out.reskin=res||null;out.name=res?base+' ('+res+')':base;out.id=safeId(base,res);out.category=document.getElementById('edCategory').value.trim()||'Non-event';out.types=document.getElementById('edTypes').value.split(',').map(x=>x.trim()).filter(Boolean);out.defaultGleam=document.getElementById('edDefault').value||null;out.hasSA=document.getElementById('fSA').checked;out.hasAlpha=document.getElementById('fAlpha').checked;out.hasGamma=document.getElementById('fGamma').checked;out.hasRadiant=document.getElementById('fRadiant').checked;out.hasFirstEdition=document.getElementById('fFE').checked;out.valueless=document.getElementById('fValueless').checked;out.gammaGlitch=!!out.gammaGlitch;out.cycle=false;upsertLoomian(out,id);document.getElementById('edMsg').textContent='Saved. Variation/form values are now separated.';};
+  document.getElementById('saveEd').onclick=()=>{saveVarName();const base=document.getElementById('edBase').value.trim()||'New Loomian';const res=document.getElementById('edReskin').value.trim();const out={...work};out.species=base;out.reskin=res||null;out.name=res?base+' ('+res+')':base;out.id=safeId(base,res);out.category=document.getElementById('edCategory').value.trim()||'Non-event';out.types=document.getElementById('edTypes').value.split(',').map(x=>x.trim()).filter(Boolean);out.defaultGleam=document.getElementById('edDefault').value||null;out.hasSA=document.getElementById('fSA').checked;out.hasAlpha=document.getElementById('fAlpha').checked;out.hasGamma=document.getElementById('fGamma').checked;out.hasRadiant=document.getElementById('fRadiant').checked;out.hasFirstEdition=document.getElementById('fFE').checked;out.valueless=document.getElementById('fValueless').checked;out.gammaGlitch=!!out.gammaGlitch;out.cycle=false;upsertLoomian(out,id);document.getElementById('edMsg').textContent='Saved on this computer. Click Publish for everyone so the live site updates.';};
   if(p)document.getElementById('deleteEd').onclick=()=>{if(confirm('Delete '+displayName(p)+'?')){deleteLoomian(p.id);closeModal('adminModal')}};
   document.getElementById('adminModal').classList.add('open');
 }
 function showChangelog(){const items=readChanges();const c=document.getElementById('changeContent');c.innerHTML=items.length?`<div class="changelog-list">${items.map(x=>`<div class="change-item"><b>${escapeHtml(x.summary)}</b><div class="change-muted">${escapeHtml(x.time||'')}</div>${x.details?`<div>${escapeHtml(x.details)}</div>`:''}</div>`).join('')}</div>`:'<p>No owner value changes have been saved on this browser yet. Future edits will appear here automatically.</p>';document.getElementById('changeModal').classList.add('open');}
-function exportUpdatedHtml(){logChange('Exported updated HTML','Downloaded a copy with current owner data and changelog baked in.');saveOwnerData();const data=JSON.stringify(LOOMIANS);const changes=JSON.stringify(readChanges());fetch(location.href).then(r=>r.text()).catch(()=>document.documentElement.outerHTML).then(html=>{let out=html;const la=out.indexOf('const LOOMIANS = ');const lb=out.indexOf(';const ICONS',la);if(la>=0&&lb>la)out=out.slice(0,la)+'const LOOMIANS = '+data+out.slice(lb);const ca=out.indexOf('const CHANGELOG_SEED=');const cb=out.indexOf(';const DEMAND_COLORS=',ca);if(ca>=0&&cb>ca)out=out.slice(0,ca)+'const CHANGELOG_SEED='+changes+out.slice(cb);const blob=new Blob([out],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='loomian-value-dex-owner-updated.html';a.click();URL.revokeObjectURL(a.href);});}
-function importBackup(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,.html';inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{let t=String(r.result||'');let data=null;try{data=JSON.parse(t)}catch(e){const m=t.match(/const LOOMIANS = (\[[\s\S]*?\]);/);if(m)try{data=JSON.parse(m[1])}catch(_){}}if(Array.isArray(data)){LOOMIANS.splice(0,LOOMIANS.length,...data);saveOwnerData();refreshSelects();render();logChange('Imported owner backup',f.name);alert('Imported successfully.')}else alert('Could not find Loomian data in that file.');};r.readAsText(f)};inp.click();}
+function exportUpdatedHtml(){openPublishSettings()}
+function importBackup(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,.html';inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{let t=String(r.result||'');let data=null;try{data=JSON.parse(t)}catch(e){const m=t.match(/const LOOMIANS = (\[[\s\S]*?\]);/);if(m)try{data=JSON.parse(m[1])}catch(_){}}if(Array.isArray(data)){LOOMIANS.splice(0,LOOMIANS.length,...data);saveOwnerData();if(typeof markUnpublished==='function')markUnpublished();refreshSelects();if(typeof fillToolSelects==='function')fillToolSelects();render();logChange('Imported owner backup',f.name);alert('Imported on this computer. Publish for everyone to update the live site.');}else alert('Could not find Loomian data in that file.');};r.readAsText(f)};inp.click();}
+
+const PORT_KEY='loomianPortfolio_v1';
+const TRADE_KEY='loomianTrade_v1';
+const PUBLISH_KEY='loomianPublishCfg_v1';
+function markUnpublished(){UNPUBLISHED=true;const b=document.getElementById('publishBanner');if(b&&OWNER_AUTH)b.classList.add('show')}
+function clearUnpublished(){UNPUBLISHED=false;const b=document.getElementById('publishBanner');if(b)b.classList.remove('show')}
+function fmtGR(n){if(!isFinite(n))return '0 GR';const x=Math.round(n*1000)/1000;return x+' GR'}
+function gleamChoices(p){
+  const out=[{k:'event',n:'Normal'}];
+  if(p.hasSA)out.push({k:'sa',n:'Secret'});
+  if(p.hasAlpha)out.push({k:'alpha',n:'Alpha'});
+  if(p.hasGamma)out.push({k:'gamma',n:'Gamma'});
+  if(p.hasRadiant)out.push({k:'radiant',n:'Radiant'});
+  const vals=p.values||{};
+  if(vals.radiantAlpha)out.push({k:'radiantAlpha',n:'Radiant Alpha'});
+  if(vals.radiantGamma)out.push({k:'radiantGamma',n:'Radiant Gamma'});
+  return out;
+}
+function natureChoices(p,gleam,color){
+  const key=gleam==='event'?null:gleam;
+  const blob=pickValue(p,key,color);
+  const rows=[];
+  (blob&&blob.rows||[]).forEach(r=>rows.push({n:r.n||'Value',v:r.v||'0 GR',gr:valueNum(r.v),demand:r.demand||''}));
+  if(blob&&blob.extras){
+    Object.entries(blob.extras).forEach(([k,ex])=>{
+      (ex.rows||[]).forEach(r=>rows.push({n:(LABELS[k]||k)+' · '+(r.n||'Value'),v:r.v||'0 GR',gr:valueNum(r.v),demand:r.demand||''}));
+    });
+  }
+  if(!rows.length) rows.push({n:'No listed value',v:'0 GR',gr:0});
+  return rows;
+}
+function fillLoomSelect(sel,q){
+  if(!sel)return;
+  const keep=sel.value;
+  q=String(q||'').toLowerCase().trim();
+  let list=LOOMIANS.slice().sort((a,b)=>naturalSort(displayName(a),displayName(b)));
+  if(q)list=list.filter(p=>displayName(p).toLowerCase().includes(q));
+  sel.innerHTML=list.map(p=>'<option value="'+p.id+'">'+escapeHtml(displayName(p))+'</option>').join('');
+  if([...sel.options].some(o=>o.value===keep))sel.value=keep;
+}
+function bindPicker(prefix){
+  const loom=document.getElementById(prefix+'Loom');
+  const gleam=document.getElementById(prefix+'Gleam');
+  const color=document.getElementById(prefix+'Color');
+  const nature=document.getElementById(prefix+'Nature');
+  const fe=document.getElementById(prefix+'FE');
+  function p(){return LOOMIANS.find(x=>x.id===loom.value)}
+  function refresh(){
+    const item=p(); if(!item)return;
+    const gKeep=gleam.value,cKeep=color.value,nKeep=nature.value;
+    gleam.innerHTML=gleamChoices(item).map(g=>'<option value="'+g.k+'">'+g.n+'</option>').join('');
+    if([...gleam.options].some(o=>o.value===gKeep))gleam.value=gKeep;
+    const cols=item.colors&&item.colors.length?item.colors:[{name:'Base'}];
+    color.innerHTML=cols.map(c=>'<option value="'+escapeHtml(c.name)+'">'+escapeHtml(c.name)+'</option>').join('');
+    if([...color.options].some(o=>o.value===cKeep))color.value=cKeep;
+    const ns=natureChoices(item,gleam.value,color.value);
+    nature.innerHTML=ns.map((n,i)=>'<option value="'+i+'">'+escapeHtml(n.n)+' — '+escapeHtml(n.v)+'</option>').join('');
+    if([...nature.options].some(o=>o.value===nKeep))nature.value=nKeep;
+    if(fe){fe.disabled=!item.hasFirstEdition; if(!item.hasFirstEdition)fe.checked=false;}
+  }
+  loom.onchange=refresh; gleam.onchange=refresh; color.onchange=refresh;
+  return {refresh, current(){
+    const item=p(); if(!item)return null;
+    const ns=natureChoices(item,gleam.value,color.value);
+    const n=ns[+nature.value||0]||ns[0];
+    const qty=Math.max(1,parseInt(document.getElementById(prefix+'Qty').value,10)||1);
+    const feOn=!!(fe&&fe.checked&&item.hasFirstEdition);
+    const blob=pickValue(item,gleam.value==='event'?null:gleam.value,color.value)||{};
+    const bonus=feOn?valueNum(blob.firstEdition||''):0;
+    return {loomianId:item.id,name:displayName(item),gleam:gleam.value,color:color.value,nature:n.n,valueText:n.v,gr:(n.gr||0)+bonus,qty,fe:feOn};
+  }};
+}
+function fillToolSelects(){
+  fillLoomSelect(document.getElementById('portLoom'), (document.getElementById('portFilter')||{}).value);
+  fillLoomSelect(document.getElementById('tradeLoom'), (document.getElementById('tradeFilter')||{}).value);
+  if(window._portPicker) window._portPicker.refresh();
+  if(window._tradePicker) window._tradePicker.refresh();
+}
+function readPort(){try{return JSON.parse(localStorage.getItem(PORT_KEY)||'[]')}catch(e){return []}}
+function writePort(x){localStorage.setItem(PORT_KEY,JSON.stringify(x));renderPortfolio()}
+function readTrade(){try{return JSON.parse(localStorage.getItem(TRADE_KEY)||'{"left":[],"right":[]}')}catch(e){return {left:[],right:[]}}}
+function writeTrade(x){localStorage.setItem(TRADE_KEY,JSON.stringify(x));renderTrade()}
+function itemLine(it,i,kind){
+  return `<div class="item"><div><b>${escapeHtml(it.name)}</b><div class="change-muted">${escapeHtml(LABELS[it.gleam]||it.gleam)} · ${escapeHtml(it.color||'Base')} · ${escapeHtml(it.nature)}${it.fe?' · FE':''} × ${it.qty}</div></div><div><b>${fmtGR((it.gr||0)* (it.qty||1))}</b> <button type="button" class="secondary" data-del="${kind}:${i}">Remove</button></div></div>`;
+}
+function renderPortfolio(){
+  const list=readPort();
+  const total=list.reduce((s,it)=>s+(it.gr||0)*(it.qty||1),0);
+  document.getElementById('portWorth').textContent=fmtGR(total);
+  document.getElementById('portList').innerHTML=list.length?list.map((it,i)=>itemLine(it,i,'port')).join(''):'<p class="help">No Loomians in your portfolio yet.</p>';
+}
+function renderTrade(){
+  const t=readTrade();
+  const L=(t.left||[]).reduce((s,it)=>s+(it.gr||0)*(it.qty||1),0);
+  const R=(t.right||[]).reduce((s,it)=>s+(it.gr||0)*(it.qty||1),0);
+  document.getElementById('leftWorth').textContent=fmtGR(L);
+  document.getElementById('rightWorth').textContent=fmtGR(R);
+  document.getElementById('leftList').innerHTML=(t.left&&t.left.length)?t.left.map((it,i)=>itemLine(it,i,'left')).join(''):'<p class="help">Empty</p>';
+  document.getElementById('rightList').innerHTML=(t.right&&t.right.length)?t.right.map((it,i)=>itemLine(it,i,'right')).join(''):'<p class="help">Empty</p>';
+  const v=document.getElementById('tradeVerdict');
+  if(!(t.left||[]).length&&!(t.right||[]).length){v.className='verdict fair';v.textContent='Add Loomians to compare';return;}
+  const diff=R-L;
+  const max=Math.max(L,R,0.0001);
+  const pct=Math.abs(diff)/max;
+  if(pct<=0.05){v.className='verdict fair';v.textContent='Fair trade · difference '+fmtGR(Math.abs(diff));}
+  else if(diff>0){v.className='verdict win';v.textContent='Win for you · you gain '+fmtGR(diff);}
+  else {v.className='verdict lose';v.textContent='Lose for you · you overpay '+fmtGR(-diff);}
+}
+function setView(name){
+  document.querySelectorAll('.topnav [data-view]').forEach(b=>b.classList.toggle('on',b.getAttribute('data-view')===name));
+  const dex=document.getElementById('dexView');
+  if(dex)dex.style.display=name==='dex'?'block':'none';
+  document.getElementById('portfolioView').classList.toggle('on',name==='portfolio');
+  document.getElementById('tradeView').classList.toggle('on',name==='trade');
+  if(name==='portfolio')renderPortfolio();
+  if(name==='trade')renderTrade();
+}
+function utf8ToB64(str){
+  const bytes=new TextEncoder().encode(str);
+  let bin='';
+  const chunk=0x2000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    bin+=String.fromCharCode.apply(null, Array.from(bytes.subarray(i,i+chunk)));
+  }
+  return btoa(bin);
+}
+function bakeHtml(){
+  const data=JSON.stringify(LOOMIANS);
+  const changes=JSON.stringify(readChanges());
+  return fetch(location.href).then(r=>r.text()).catch(()=>document.documentElement.outerHTML).then(html=>{
+    let out=html;
+    const la=out.indexOf('const LOOMIANS = ');
+    const lb=out.indexOf('\nconst ICONS=', la);
+    if(la>=0&&lb>la)out=out.slice(0,la)+'const LOOMIANS = '+data+';'+out.slice(lb);
+    const ca=out.indexOf('const CHANGELOG_SEED=');
+    const cb=out.indexOf('\nconst DEMAND_COLORS=',ca);
+    if(ca>=0&&cb>ca)out=out.slice(0,ca)+'const CHANGELOG_SEED='+changes+';'+out.slice(cb);
+    return out;
+  });
+}
+function downloadHtml(html){
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='index.html';a.click();URL.revokeObjectURL(a.href);
+}
+function getPublishCfg(){try{return JSON.parse(localStorage.getItem(PUBLISH_KEY)||'{}')}catch(e){return {}}}
+function savePublishCfg(cfg){localStorage.setItem(PUBLISH_KEY,JSON.stringify(cfg))}
+async function githubPut(cfg,html){
+  const path=(cfg.path||'index.html').replace(/^\/+/,'');
+  const api='https://api.github.com/repos/'+encodeURIComponent(cfg.owner)+'/'+encodeURIComponent(cfg.repo)+'/contents/'+path.split('/').map(encodeURIComponent).join('/');
+  const headers={Authorization:'Bearer '+cfg.token,'Accept':'application/vnd.github+json'};
+  let sha='';
+  const get=await fetch(api+'?ref='+encodeURIComponent(cfg.branch||'main'),{headers});
+  if(get.ok){const j=await get.json();sha=j.sha||''}
+  else if(get.status!==404){throw new Error('GitHub read failed ('+get.status+')')}
+  const body={message:'Publish Loomian value updates',content:utf8ToB64(html),branch:cfg.branch||'main'};
+  if(sha)body.sha=sha;
+  const put=await fetch(api,{method:'PUT',headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!put.ok){const t=await put.text();throw new Error(t.slice(0,300)||('GitHub write failed ('+put.status+')'))}
+}
+function openPublishSettings(){
+  if(!OWNER_AUTH)return ownerLogin();
+  const cfg=getPublishCfg();
+  const c=document.getElementById('adminContent');
+  document.getElementById('adminTitle').textContent='Publish for everyone';
+  c.innerHTML=`<p class="simple-help">Edits stay on this computer until you publish. Connect the GitHub repo that hosts this page, or download <b>index.html</b> and replace the file in your repo so every visitor sees the new values.</p>
+    <div class="admin-grid">
+      <label>GitHub user/org<input id="ghOwner" value="${escapeHtml(cfg.owner||'')}" placeholder="your-username"></label>
+      <label>Repository<input id="ghRepo" value="${escapeHtml(cfg.repo||'')}" placeholder="loomian-value-dex"></label>
+      <label>Branch<input id="ghBranch" value="${escapeHtml(cfg.branch||'main')}"></label>
+      <label>File path<input id="ghPath" value="${escapeHtml(cfg.path||'index.html')}"></label>
+      <label>GitHub token (repo scope)<input id="ghToken" type="password" value="${escapeHtml(cfg.token||'')}" placeholder="Stored only in this browser"></label>
+    </div>
+    <p class="simple-help">Create a token at GitHub → Settings → Developer settings → Personal access tokens. The token is never written into the public HTML.</p>
+    <div class="admin-actions">
+      <button type="button" id="savePubCfg" class="secondary">Save settings</button>
+      <button type="button" id="doPublish">Publish to GitHub</button>
+      <button type="button" id="doDownload" class="secondary">Download index.html</button>
+      <button type="button" id="useLive" class="secondary">Discard local drafts</button>
+      <button type="button" class="secondary" onclick="closeModal('adminModal')">Close</button>
+    </div>
+    <div id="pubMsg" class="admin-ok"></div>`;
+  document.getElementById('adminModal').classList.add('open');
+  const grab=()=>({owner:document.getElementById('ghOwner').value.trim(),repo:document.getElementById('ghRepo').value.trim(),branch:document.getElementById('ghBranch').value.trim()||'main',path:document.getElementById('ghPath').value.trim()||'index.html',token:document.getElementById('ghToken').value.trim()});
+  document.getElementById('savePubCfg').onclick=()=>{savePublishCfg(grab());document.getElementById('pubMsg').textContent='Settings saved on this computer only.'};
+  document.getElementById('doDownload').onclick=async()=>{const html=await bakeHtml();downloadHtml(html);document.getElementById('pubMsg').textContent='Downloaded index.html. Replace that file in GitHub and commit/push so everyone sees it.';};
+  document.getElementById('useLive').onclick=()=>{if(confirm('Discard unpublished local value edits and reload the live file?')){localStorage.removeItem(OWNER_DATA_KEY);location.reload();}};
+  document.getElementById('doPublish').onclick=async()=>{
+    const next=grab(); savePublishCfg(next);
+    if(!next.owner||!next.repo||!next.token){document.getElementById('pubMsg').textContent='Fill in GitHub user, repo, and token first.';return;}
+    document.getElementById('pubMsg').textContent='Publishing…';
+    try{
+      const html=await bakeHtml();
+      await githubPut(next,html);
+      saveOwnerData();
+      clearUnpublished();
+      logChange('Published live values','Pushed index.html to GitHub so all visitors see the new values.');
+      document.getElementById('pubMsg').textContent='Published. Everyone will see the new values after GitHub Pages refreshes.';
+    }catch(err){document.getElementById('pubMsg').textContent='Publish failed: '+err.message;}
+  };
+}
+function setupTools(){
+  document.querySelectorAll('.topnav [data-view]').forEach(b=>b.onclick=()=>setView(b.getAttribute('data-view')));
+  fillLoomSelect(document.getElementById('portLoom'));
+  fillLoomSelect(document.getElementById('tradeLoom'));
+  document.getElementById('portFilter').oninput=()=>{fillLoomSelect(document.getElementById('portLoom'),document.getElementById('portFilter').value);window._portPicker.refresh()};
+  document.getElementById('tradeFilter').oninput=()=>{fillLoomSelect(document.getElementById('tradeLoom'),document.getElementById('tradeFilter').value);window._tradePicker.refresh()};
+  window._portPicker=bindPicker('port');
+  window._tradePicker=bindPicker('trade');
+  window._portPicker.refresh();
+  window._tradePicker.refresh();
+  document.getElementById('portAdd').onclick=()=>{const it=window._portPicker.current();if(!it)return;const list=readPort();list.push(it);writePort(list)};
+  document.getElementById('portClear').onclick=()=>{if(confirm('Clear your portfolio?'))writePort([])};
+  document.getElementById('tradeAdd').onclick=()=>{const it=window._tradePicker.current();if(!it)return;const t=readTrade();const side=document.getElementById('tradeSide').value;t[side]=t[side]||[];t[side].push(it);writeTrade(t)};
+  document.getElementById('tradeClear').onclick=()=>writeTrade({left:[],right:[]});
+  document.body.addEventListener('click',e=>{
+    const del=e.target.closest('[data-del]');
+    if(!del)return;
+    const [kind,i]=del.getAttribute('data-del').split(':');
+    const idx=+i;
+    if(kind==='port'){const list=readPort();list.splice(idx,1);writePort(list)}
+    else {const t=readTrade();t[kind].splice(idx,1);writeTrade(t)}
+  });
+  if(UNPUBLISHED&&OWNER_AUTH) markUnpublished();
+}
+
 ensureOwnerUi();
-grid.addEventListener('click',e=>{const ed=e.target.closest('[data-owner-edit]');if(ed){openEditor(ed.getAttribute('data-owner-edit'));return;}});
+setupTools();
+grid.addEventListener('click',e=>{const ed=e.target.closest('[data-owner-edit]');if(ed){openEditor(ed.getAttribute('data-owner-edit'));return;}const add=e.target.closest('[data-add-port]');if(add){const id=add.getAttribute('data-add-port');setView('portfolio');const sel=document.getElementById('portLoom');if(sel){sel.value=id;}const st=state.get(id);if(window._portPicker){window._portPicker.refresh();if(st){const gleam=document.getElementById('portGleam');const color=document.getElementById('portColor');if(gleam&&st.gleam)gleam.value=st.gleam;if(color){const p=LOOMIANS.find(x=>x.id===id);const name=(p&&p.colors||[])[st.color]&&(p.colors[st.color].name);if(name)color.value=name;}window._portPicker.refresh();}}return;}});
 
 setInterval(()=>{
   document.querySelectorAll('img.loom-sprite[data-cycle]').forEach(img=>{
